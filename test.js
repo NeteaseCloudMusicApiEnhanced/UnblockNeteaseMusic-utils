@@ -1,0 +1,6 @@
+const { matchID } = require('./src/match');
+    async function getMusicUrl(id) {
+        const result = await matchID(id); // 返回json文本
+        console.log(result.data.url); // 输出url
+    }
+console.log(getMusicUrl('1971144922'))
