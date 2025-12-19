@@ -132,25 +132,6 @@ GET /match?id=123456&source=cenguigui
 
 - `PORT` - 指定服务器端口 (默认: 3000)
 
-## 项目结构
-
-```
-unblockmusic-utils/
-├── index.js              # 主入口文件
-├── package.json          # 项目配置
-├── README.md             # 项目说明
-├── test.js               # 测试文件
-├── src/
-│   ├── match.js          # 匹配逻辑
-│   └── logger.js         # 日志系统
-└── modules/
-    └── ...js        # 音源模块
-```
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request 来改进项目。
-
 ## 许可证
 
 MIT
