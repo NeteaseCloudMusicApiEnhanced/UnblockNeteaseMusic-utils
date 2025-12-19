@@ -1,7 +1,7 @@
 {
   "name": "@neteasecloudmusicapienhanced/unblockmusic-utils",
-  "version": "0.1.0",
-  "description": "unblockmusic-utils 是一个用于解锁网易云音乐内容的Api项目，使用expressjs, 旨在帮助用户绕过地理限制和版权限制，获取更多的音乐资源。",
+  "version": "0.1.1",
+  "description": "⚙️A unlock music tool for NeteaseCloudMusicApiEnhanced.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
