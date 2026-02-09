@@ -44,8 +44,11 @@
     .test-form button { padding: 8px 20px; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: background 0.2s ease; }
     .test-form button:hover { background: var(--accent-hover); }
     .test-result { margin-top: 12px; padding: 12px; background: #f5f5f5; border-radius: 6px; font-size: 13px; }
-    .test-result .url { word-break: break-all; color: var(--accent); }
-    .test-result .source { color: var(--muted); font-size: 12px; }
+    .test-result .url { word-break: break-all; color: var(--accent); margin-bottom: 8px; }
+    .test-result .source { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .test-result audio { width: 100%; margin-top: 8px; }
+    .test-result .copy-btn { display: inline-block; padding: 4px 12px; background: var(--fg); color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; transition: background 0.2s ease; margin-top: 8px; }
+    .test-result .copy-btn:hover { background: var(--accent); }
   </style>
 </head>
 <body>
@@ -70,11 +73,6 @@
         <input type="text" id="song-id" placeholder="歌曲 ID，如：2756058128" />
         <select id="source-select">
           <option value="">自动选择音源</option>
-          <option value="baka">Baka</option>
-          <option value="gdmusic">GDMusic</option>
-          <option value="msls">MSLS1441</option>
-          <option value="qijieya">qijieya</option>
-          <option value="unm">UNM</option>
         </select>
         <button onclick="testMatch()">测试</button>
       </div>
@@ -85,23 +83,18 @@
       <h2>API 接口</h2>
       <ul class="links">
         <li><a href="/match?id=2756058128" target="_blank">GET /match - 获取音乐链接（自动音源）</a></li>
-        <li><a href="/match?id=2756058128&source=baka" target="_blank">GET /match?source=baka - 指定 Baka 音源</a></li>
-        <li><a href="/match?id=2756058128&source=qijieya" target="_blank">GET /match?source=qijieya - 指定qijieya音源</a></li>
+        <li><a id="api-example-link" href="/match?id=2756058128&source=" target="_blank">GET /match?source=[模块名] - 指定音源</a></li>
       </ul>
       <h3 style="margin: 16px 0 8px; font-size: 15px; font-weight: 600;">POST 请求示例：</h3>
       <pre><code>curl -X POST {origin}/match \
   -H "Content-Type: application/json" \
-  -d '{"id": "2756058128", "source": "baka"}'</code></pre>
+  -d '{"id": "2756058128", "source": "[模块名]"}</code></pre>
     </section>
 
     <section class="block">
       <h2>可用音源模块</h2>
       <ul class="links">
-        <li><span class="source-tag">baka</span>Baka 音源服务</li>
-        <li><span class="source-tag">gdmusic</span>GDMusic - <code>https://music-api.gdstudio.xyz/</code></li>
-        <li><span class="source-tag">msls</span>MSLS 音源服务</li>
-        <li><span class="source-tag">qijieya</span>七杰雅 - <code>https://api.qijieya.cn/</code></li>
-        <li><span class="source-tag">unm</span>UNM 音源服务</li>
+        <li><span style="color: var(--muted);">正在加载模块列表...</span></li>
       </ul>
       <p style="margin-top: 12px; color: var(--muted); font-size: 13px;">系统会自动尝试所有可用模块，直到找到可用的音乐链接。</p>
     </section>
@@ -150,10 +143,56 @@ const result = await matchID('歌曲ID', '音源模块名（可选）');</code><
           document.getElementById('version').textContent = 'v0.1.4';
         });
 
+      // 从API获取可用模块列表
+      fetch('/inner/modules')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var modules = data && data.data && data.data.modules;
+          if (modules && modules.length > 0) {
+            populateModules(modules);
+          }
+        })
+        .catch(function() {
+          console.warn('Failed to load modules list');
+        });
+
       var pres = document.querySelectorAll('pre code');
       pres.forEach(function(pre) {
         pre.textContent = pre.textContent.replace(/\{origin\}/g, origin);
       });
+    }
+
+    function populateModules(modules) {
+      // 更新测试表单的下拉选择框
+      var select = document.getElementById('source-select');
+      var firstOption = select.querySelector('option[value=""]');
+      select.innerHTML = '';
+      select.appendChild(firstOption);
+      modules.forEach(function(module) {
+        var option = document.createElement('option');
+        option.value = module;
+        option.textContent = module.charAt(0).toUpperCase() + module.slice(1);
+        select.appendChild(option);
+      });
+
+      // 更新可用音源模块列表
+      var modulesList = document.querySelector('.block:nth-of-type(4) ul.links');
+      if (modulesList) {
+        modulesList.innerHTML = '';
+        modules.forEach(function(module) {
+          var li = document.createElement('li');
+          li.innerHTML = '<span class="source-tag">' + module + '</span>' + module.charAt(0).toUpperCase() + module.slice(1) + ' 音源服务';
+          modulesList.appendChild(li);
+        });
+      }
+
+      // 更新API示例链接
+      var apiExampleLink = document.getElementById('api-example-link');
+      if (apiExampleLink && modules.length > 0) {
+        var firstModule = modules[0];
+        apiExampleLink.href = '/match?id=2756058128&source=' + firstModule;
+        apiExampleLink.textContent = 'GET /match?source=' + firstModule + ' - 指定 ' + firstModule.charAt(0).toUpperCase() + firstModule.slice(1) + ' 音源';
+      }
     }
 
     function testMatch() {
@@ -178,17 +217,34 @@ const result = await matchID('歌曲ID', '音源模块名（可选）');</code><
       fetch(url)
         .then(function(r) { return r.json(); })
         .then(function(data) {
-          if (data.url) {
+          if (data.code === 200 && data.data && data.data.url) {
+            var audioUrl = data.data.url;
+            var sourceName = data.data.source || '自动选择';
             resultDiv.innerHTML = 
-              '<div class="url">🎵 ' + data.url + '</div>' +
-              '<div class="source">音源: ' + (data.source || '自动选择') + '</div>';
+              '<div class="url">🎵 ' + audioUrl + '</div>' +
+              '<div class="source">音源: ' + sourceName + '</div>' +
+              '<audio controls autoplay>' +
+                '<source src="' + audioUrl + '" type="audio/mpeg">' +
+                '<source src="' + audioUrl + '" type="audio/flac">' +
+                '您的浏览器不支持音频播放' +
+              '</audio>' +
+              '<button class="copy-btn" onclick="copyToClipboard(\'' + audioUrl + '\')">复制链接</button>';
           } else {
-            resultDiv.innerHTML = '<span style="color: var(--accent);">未找到可用的音乐链接</span>';
+            var errorMsg = data.message || '未找到可用的音乐链接';
+            resultDiv.innerHTML = '<span style="color: var(--accent);">' + errorMsg + '</span>';
           }
         })
         .catch(function(err) {
           resultDiv.innerHTML = '<span style="color: var(--accent);">请求失败: ' + err.message + '</span>';
         });
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(function() {
+        alert('链接已复制到剪贴板');
+      }).catch(function(err) {
+        prompt('复制失败，请手动复制：', text);
+      });
     }
 
     document.addEventListener('DOMContentLoaded', updateStatus);

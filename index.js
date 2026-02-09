@@ -53,6 +53,34 @@ unblockmusic-utils - 解锁网易云音乐内容的API服务
   const packageJson = require('./package.json');
 
   // 内部API路由
+  app.get('/inner/modules', (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+
+    try {
+      const modulesPath = path.join(__dirname, 'modules');
+      const files = fs.readdirSync(modulesPath);
+      const modules = files
+        .filter(file => file.endsWith('.js'))
+        .map(file => file.replace('.js', ''));
+      
+      res.json({
+        code: 200,
+        data: {
+          modules: modules
+        }
+      });
+    } catch (error) {
+      res.json({
+        code: 500,
+        data: {
+          modules: []
+        },
+        message: error.message
+      });
+    }
+  });
+
   app.get('/inner/version', (req, res) => {
     res.json({
       code: 200,
