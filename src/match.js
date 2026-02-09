@@ -7,12 +7,42 @@ const logger = require('./logger');
 const modulesDir = path.join(__dirname, '../modules');
 let availableModules = [];
 
+// 缓存已加载的模块
+const moduleCache = {};
+
 // 动态加载modules目录下的所有js模块
 if (fs.existsSync(modulesDir)) {
   const files = fs.readdirSync(modulesDir);
   availableModules = files
     .filter(file => file.endsWith('.js'))
     .map(file => file.replace('.js', ''));
+}
+
+/**
+ * 加载模块（带缓存）
+ * @param {string} moduleName - 模块名称
+ * @returns {Function|null} 模块函数或null
+ */
+function loadModule(moduleName) {
+  // 如果已经缓存，直接返回
+  if (moduleCache[moduleName]) {
+    return moduleCache[moduleName];
+  }
+
+  const modulePath = path.join(__dirname, `../modules/${moduleName}.js`);
+  if (!fs.existsSync(modulePath)) {
+    return null;
+  }
+
+  try {
+    const module = require(modulePath);
+    // 缓存模块
+    moduleCache[moduleName] = module;
+    return module;
+  } catch (error) {
+    logger.error(`Failed to load module ${moduleName}: ${error.message}`);
+    return null;
+  }
 }
 
 /**
@@ -32,8 +62,8 @@ async function matchID(id, source = null) {
 
   // 如果指定了特定音源
   if (source) {
-    const modulePath = path.join(__dirname, `../modules/${source}.js`);
-    if (!fs.existsSync(modulePath)) {
+    const module = loadModule(source);
+    if (!module) {
       return {
         code: 404,
         message: `Module ${source} not found`,
@@ -42,9 +72,8 @@ async function matchID(id, source = null) {
     }
 
     try {
-      const module = require(modulePath);
       const url = await module(id);
-      
+
       if (url) {
         return {
           code: 200,
@@ -73,10 +102,13 @@ async function matchID(id, source = null) {
   // 如果没有指定音源，遍历所有可用模块
   for (const moduleName of availableModules) {
     try {
-      const modulePath = path.join(__dirname, `../modules/${moduleName}.js`);
-      const module = require(modulePath);
+      const module = loadModule(moduleName);
+      if (!module) {
+        continue;
+      }
+
       const url = await module(id);
-      
+
       if (url && url !== null) {
         return {
           code: 200,
