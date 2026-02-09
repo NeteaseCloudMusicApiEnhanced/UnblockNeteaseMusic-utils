@@ -1,137 +1,206 @@
-# unblockmusic-utils
-⚙️A unlock music tool for NeteaseCloudMusicApiEnhanced
+<div align="center">
 
-## 简介
+# **⚙️ UnblockNeteaseMusic - Utils**
 
-unblockmusic-utils 是一个用于解锁网易云音乐内容的 API 项目，使用 Express.js 构建，旨在帮助用户绕过地理限制和版权限制，获取更多的音乐资源。
+[![Version](https://img.shields.io/npm/v/@neteasecloudmusicapienhanced/unblockmusic-utils)](https://www.npmjs.com/package/@neteasecloudmusicapienhanced/unblockmusic-utils)
+[![License](https://img.shields.io/npm/l/@neteasecloudmusicapienhanced/unblockmusic-utils)](LICENSE)
+[![Node](https://img.shields.io/node/v/@neteasecloudmusicapienhanced/unblockmusic-utils)](https://nodejs.org/)
 
-## 功能特性
+为 [NeteaseCloudMusicApiEnhanced](https://github.com/NeteaseCloudMusicApiEnhanced) 提供的音源匹配工具
 
-- 基于 Express.js 的 RESTful API 服务
-- 自动尝试多个音源直到找到可用的音乐链接
-- 支持 npx 直接运行
+</div>
 
-## 安装
+---
+
+## 项目特点
+
+- **多音源支持** - 内置多个音源模块，自动切换获取最佳链接
+- **RESTful API** - 标准 HTTP 接口，易于集成
+- **模块化设计** - 可作为独立服务或 npm 包使用
+- **简单部署** - 支持 Vercel 一键部署
+
+## 📦 安装
+
+### 克隆项目
 
 ```bash
-# 克隆项目
-git clone https://github.com/NeteaseCloudMusicApiEhanced/unblockmusic-utils.git
-cd unblockmusic-utils
+git clone https://github.com/NeteaseCloudMusicApiEnhanced/UnblockNeteaseMusic-utils.git
+cd UnblockNeteaseMusic-utils
 
 # 安装依赖
+pnpm install  # 推荐
+# 或
 npm install
-# 或者使用 pnpm
-pnpm install
 ```
 
-## 使用方法
-
-### 1. 直接运行
+### 直接使用 npx（无需安装）
 
 ```bash
-# 使用 npm
-npm start
-
-# 使用 pnpm
-pnpm start
-
-# 使用 yarn
-yarn start
+npx @neteasecloudmusicapienhanced/unblockmusic-utils
 ```
 
-### 2. 使用 npx 直接运行（无需安装）
+## 🚀 快速开始
+
+### 命令行运行
 
 ```bash
 # 使用默认端口 3000
-npx @neteasecloudmusicapienhanced/unblockmusic-utils
+npm run start
+pnpm start
 
 # 指定端口
-npx @neteasecloudmusicapienhanced/unblockmusic-utils --port 8080
+npx . --port 8080
+PORT=8080 npm run start
 
 # 显示帮助信息
-npx @neteasecloudmusicapienhanced/unblockmusic-utils --help
+npx . --help
 ```
 
-### 3. 开发模式
+### 开发模式
 
 ```bash
-# 使用 nodemon 监听文件变化
-npm run dev
+npm run dev  # 使用 nodemon 自动重启
 ```
 
-### 4. 作为模块使用
+### Vercel 部署
+
+项目已配置 `vercel.json`，可以直接推送到 Vercel 部署：
+
+```bash
+vercel deploy
+```
+
+## 📡 API 文档
+
+### 获取音乐链接
+
+#### GET /match
+
+```bash
+curl "http://localhost:3000/match?id=123456"
+curl "http://localhost:3000/match?id=123456&source=unm"
+```
+
+#### POST /match
+
+```bash
+curl -X POST http://localhost:3000/match \
+  -H "Content-Type: application/json" \
+  -d '{"id": "123456", "source": "unm"}'
+```
+
+**请求参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | ✅ | 网易云音乐歌曲 ID |
+| `source` | string | ❌ | 指定音源模块（不指定则自动选择） |
+
+**响应示例：**
+
+```json
+{
+  "code": 200,
+  "data": {
+    "url": "https://example.com/music.mp3"
+  }
+}
+```
+
+### 内部接口
+
+#### 获取音源列表
+
+```bash
+GET /inner/modules
+```
+
+响应：
+
+```json
+{
+  "code": 200,
+  "data": {
+    "modules": ["baka", "gdmusic", "msls", "qijieya", "unm"]
+  }
+}
+```
+
+#### 获取版本信息
+
+```bash
+GET /inner/version
+```
+
+响应：
+
+```json
+{
+  "code": 200,
+  "data": {
+    "version": "0.2.0"
+  }
+}
+```
+
+## 🔌 作为模块使用
 
 ```javascript
 const { matchID } = require('@neteasecloudmusicapienhanced/unblockmusic-utils');
 
-// 匹配歌曲 ID
-const result = await matchID('歌曲ID', '音源模块名（可选）');
+// 匹配歌曲（自动选择音源）
+const result = await matchID('123456');
+
+// 指定音源
+const result = await matchID('123456', 'unm');
+
+console.log(result);
+// { code: 200, data: { url: "..." } }
 ```
 
-## API 接口
+## 🎵 支持的音源
 
-### GET /match
+| 音源 | 说明 |
+|------|------|
+| `unm` | UnblockNeteaseMusic 核心音源 |
+| `baka` | Baka 音源 |
+| `gdmusic` | GDMusic 音源 |
+| `msls` | 马赛洛斯音源 |
+| `qijieya` | 七界雅音源 |
 
-获取音乐链接。
+## ⚙️ 配置
 
-参数:
-- `id` (必需) - 网易云音乐歌曲 ID
-- `source` (可选) - 指定音源模块名称
+### 环境变量
 
-示例:
-```
-GET /match?id=123456
-GET /match?id=123456&source=cenguigui
-```
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `PORT` | 3000 | 服务监听端口 |
+| `NODE_ENV` | - | 运行环境（production/development） |
 
-### POST /match
+### 命令行选项
 
-获取音乐链接（POST 方式）。
-
-参数:
-- `id` (必需) - 网易云音乐歌曲 ID
-- `source` (可选) - 指定音源模块名称
-
-示例:
-```json
-{
-  "id": "123456",
-  "source": "cenguigui"
-}
+```bash
+--port, -p <端口号>    指定服务器端口
+--help, -h            显示帮助信息
 ```
 
-### GET /
+## 📄 许可证
 
-获取服务器信息和可用端点。
+MIT License - 详见 [LICENSE](LICENSE) 文件
 
-## 音源模块
+## 🤝 贡献
 
-当前支持以下音源模块：
+欢迎提交 Issue 和 Pull Request！
 
-- **cenguigui** - `https://music.cenguigui.cn/`
-- **gdmusic** - `https://music-api.gdstudio.xyz/`
-- **qijieya** - `https://api.qijieya.cn/`
+## 🔗 相关项目
 
-系统会自动尝试所有可用模块，直到找到可用的音乐链接。
+- [NeteaseCloudMusicApiEnhanced](https://github.com/NeteaseCloudMusicApiEnhanced) - 增强版网易云音乐 API
+- [UnblockNeteaseMusic](https://github.com/UnblockNeteaseMusic/server) - 网易云音乐解锁核心库
 
-## 命令行选项
+---
 
-- `--port, -p <端口号>` - 指定服务器端口 (默认: 3000)
-- `--help, -h` - 显示帮助信息
+<div align="center">
 
-## 日志系统
+Made with ❤️ by NeteaseCloudMusicApiEnhanced
 
-本项目使用彩色日志系统，包含以下日志级别：
-
-- `[INFO]` - 绿色，一般信息
-- `[ERROR]` - 红色，错误信息
-- `[WARN]` - 黄色，警告信息
-- `[DEBUG]` - 蓝色，调试信息
-
-## 环境变量
-
-- `PORT` - 指定服务器端口 (默认: 3000)
-
-## 许可证
-
-MIT
+</div>
