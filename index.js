@@ -46,7 +46,22 @@ unblockmusic-utils - 解锁网易云音乐内容的API服务
   // 中间件
   app.use(express.json());
 
-  // API路由
+  // 静态文件服务
+  app.use(express.static('public'));
+
+  // 读取package.json获取版本号
+  const packageJson = require('./package.json');
+
+  // 内部API路由
+  app.get('/inner/version', (req, res) => {
+    res.json({
+      code: 200,
+      data: {
+        version: packageJson.version
+      }
+    });
+  });
+
   app.get('/match', async (req, res) => {
     const id = req.query.id;
     const source = req.query.source;
@@ -97,12 +112,7 @@ unblockmusic-utils - 解锁网易云音乐内容的API服务
 
   // 根路径
   app.get('/', (req, res) => {
-    res.json({
-      message: 'unblockmusic-utils API Server',
-      endpoints: {
-        match: '/match?id=[网易云音乐歌曲id]&source=[模块名称,可选]'
-      }
-    });
+    res.sendFile(__dirname + '/public/index.html');
   });
 
   // 启动服务器

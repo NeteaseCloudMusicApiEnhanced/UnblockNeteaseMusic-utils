@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>UnblockMusic Utils</title>
+  <style>
+    :root {
+      --fg: #333;
+      --muted: #666;
+      --border: #ddd;
+      --bg: #f5f5f5;
+      --panel: #ffffff;
+      --accent: #c20c0c;
+      --accent-hover: #a00808;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--fg); background: var(--bg); line-height: 1.6; }
+    .container { max-width: 960px; margin: 40px auto; padding: 0 20px; }
+    header.site-header { margin-bottom: 24px; }
+    header.site-header h1 { font-size: 28px; font-weight: 600; margin: 0; }
+    .badge { display: inline-block; margin-left: 8px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 12px; font-size: 12px; color: var(--muted); }
+    .badge.version { background: #e8f5e9; border-color: #c8e6c9; color: #2e7d32; }
+    .sub { margin-top: 8px; color: var(--muted); font-size: 14px; }
+    .block { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .block h2 { margin: 0 0 12px; font-size: 18px; font-weight: 600; }
+    .kvs { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; align-items: center; }
+    .kvs div:first-child { color: var(--muted); }
+    ul.links { list-style: none; padding: 0; margin: 0; }
+    ul.links li { margin: 8px 0; }
+    ul.links a { color: var(--fg); text-decoration: none; border-bottom: 1px dotted var(--border); transition: all 0.2s ease; }
+    ul.links a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    pre { margin: 0; background: #f9f9f9; border: 1px solid var(--border); border-radius: 6px; padding: 12px; overflow: auto; }
+    code { font-family: 'Courier New', monospace; font-size: 13px; }
+    .source-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #e3f2fd; color: #1565c0; margin-right: 6px; }
+    footer.site-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); text-align: center; }
+    footer.site-footer a { color: var(--fg); text-decoration: none; transition: color 0.2s ease; }
+    footer.site-footer a:hover { color: var(--accent); }
+    .test-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .test-form input[type="text"] { flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    .test-form select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
+    .test-form button { padding: 8px 20px; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: background 0.2s ease; }
+    .test-form button:hover { background: var(--accent-hover); }
+    .test-result { margin-top: 12px; padding: 12px; background: #f5f5f5; border-radius: 6px; font-size: 13px; }
+    .test-result .url { word-break: break-all; color: var(--accent); }
+    .test-result .source { color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="site-header">
+      <h1>UnblockMusic Utils <span id="version" class="badge version"></span></h1>
+      <p class="sub">⚙️ 网易云音乐解灰工具 || 基于 Express.js 的 RESTful API 服务 || 自动尝试多个音源直到找到可用链接</p>
+    </header>
+
+    <section class="block">
+      <h2>服务器状态</h2>
+      <div class="kvs">
+        <div>Base URL</div><div id="base-url">—</div>
+        <div>当前页</div><div id="current-url">—</div>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>在线测试</h2>
+      <p>输入网易云音乐歌曲 ID 进行测试：</p>
+      <div class="test-form">
+        <input type="text" id="song-id" placeholder="歌曲 ID，如：2756058128" />
+        <select id="source-select">
+          <option value="">自动选择音源</option>
+          <option value="baka">Baka</option>
+          <option value="gdmusic">GDMusic</option>
+          <option value="msls">MSLS1441</option>
+          <option value="qijieya">qijieya</option>
+          <option value="unm">UNM</option>
+        </select>
+        <button onclick="testMatch()">测试</button>
+      </div>
+      <div id="test-result" class="test-result" style="display: none;"></div>
+    </section>
+
+    <section class="block">
+      <h2>API 接口</h2>
+      <ul class="links">
+        <li><a href="/match?id=2756058128" target="_blank">GET /match - 获取音乐链接（自动音源）</a></li>
+        <li><a href="/match?id=2756058128&source=baka" target="_blank">GET /match?source=baka - 指定 Baka 音源</a></li>
+        <li><a href="/match?id=2756058128&source=qijieya" target="_blank">GET /match?source=qijieya - 指定qijieya音源</a></li>
+      </ul>
+      <h3 style="margin: 16px 0 8px; font-size: 15px; font-weight: 600;">POST 请求示例：</h3>
+      <pre><code>curl -X POST {origin}/match \
+  -H "Content-Type: application/json" \
+  -d '{"id": "2756058128", "source": "baka"}'</code></pre>
+    </section>
+
+    <section class="block">
+      <h2>可用音源模块</h2>
+      <ul class="links">
+        <li><span class="source-tag">baka</span>Baka 音源服务</li>
+        <li><span class="source-tag">gdmusic</span>GDMusic - <code>https://music-api.gdstudio.xyz/</code></li>
+        <li><span class="source-tag">msls</span>MSLS 音源服务</li>
+        <li><span class="source-tag">qijieya</span>七杰雅 - <code>https://api.qijieya.cn/</code></li>
+        <li><span class="source-tag">unm</span>UNM 音源服务</li>
+      </ul>
+      <p style="margin-top: 12px; color: var(--muted); font-size: 13px;">系统会自动尝试所有可用模块，直到找到可用的音乐链接。</p>
+    </section>
+
+    <section class="block">
+      <h2>使用方式</h2>
+      <h3 style="margin: 16px 0 8px; font-size: 15px; font-weight: 600;">命令行运行：</h3>
+      <pre><code># 使用默认端口 3000
+npx @neteasecloudmusicapienhanced/unblockmusic-utils
+
+# 指定端口
+npx @neteasecloudmusicapienhanced/unblockmusic-utils --port 8080
+
+# 本地运行
+npm start</code></pre>
+      <h3 style="margin: 16px 0 8px; font-size: 15px; font-weight: 600;">作为模块使用：</h3>
+      <pre><code>const { matchID } = require('@neteasecloudmusicapienhanced/unblockmusic-utils');
+
+const result = await matchID('歌曲ID', '音源模块名（可选）');</code></pre>
+    </section>
+
+    <footer class="site-footer">
+      <a href="https://github.com/NeteaseCloudMusicApiEnhanced/UnblockNeteaseMusic-utils" target="_blank">GitHub</a>
+      <span style="margin: 0 8px;">·</span>
+      <a href="https://www.npmjs.com/package/@neteasecloudmusicapienhanced/unblockmusic-utils" target="_blank">NPM</a>
+    </footer>
+  </main>
+
+  <script>
+    var origin = window.location.origin;
+
+    function updateStatus() {
+      document.getElementById('base-url').textContent = origin;
+      document.getElementById('current-url').textContent = window.location.href;
+
+      // 从API获取版本号
+      fetch('/inner/version')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var v = data && data.data && data.data.version;
+          if (v) {
+            document.getElementById('version').textContent = 'v' + v;
+          }
+        })
+        .catch(function() {
+          document.getElementById('version').textContent = 'v0.1.4';
+        });
+
+      var pres = document.querySelectorAll('pre code');
+      pres.forEach(function(pre) {
+        pre.textContent = pre.textContent.replace(/\{origin\}/g, origin);
+      });
+    }
+
+    function testMatch() {
+      var songId = document.getElementById('song-id').value.trim();
+      var source = document.getElementById('source-select').value;
+      var resultDiv = document.getElementById('test-result');
+
+      if (!songId) {
+        resultDiv.innerHTML = '<span style="color: var(--accent);">请输入歌曲 ID</span>';
+        resultDiv.style.display = 'block';
+        return;
+      }
+
+      resultDiv.innerHTML = '<span style="color: var(--muted);">正在匹配...</span>';
+      resultDiv.style.display = 'block';
+
+      var url = '/match?id=' + encodeURIComponent(songId);
+      if (source) {
+        url += '&source=' + encodeURIComponent(source);
+      }
+
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.url) {
+            resultDiv.innerHTML = 
+              '<div class="url">🎵 ' + data.url + '</div>' +
+              '<div class="source">音源: ' + (data.source || '自动选择') + '</div>';
+          } else {
+            resultDiv.innerHTML = '<span style="color: var(--accent);">未找到可用的音乐链接</span>';
+          }
+        })
+        .catch(function(err) {
+          resultDiv.innerHTML = '<span style="color: var(--accent);">请求失败: ' + err.message + '</span>';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', updateStatus);
+  </script>
+</body>
+</html>
