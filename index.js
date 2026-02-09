@@ -4,8 +4,114 @@ const express = require('express');
 const { matchID } = require('./src/match');
 const logger = require('./src/logger');
 
+// 创建Express应用
+const app = express();
+
+// 中间件
+app.use(express.json());
+
+// 静态文件服务
+app.use(express.static('public'));
+
+// 读取package.json获取版本号
+const packageJson = require('./package.json');
+
+// 内部API路由
+app.get('/inner/modules', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  try {
+    const modulesPath = path.join(__dirname, 'modules');
+    const files = fs.readdirSync(modulesPath);
+    const modules = files
+      .filter(file => file.endsWith('.js'))
+      .map(file => file.replace('.js', ''));
+    
+    res.json({
+      code: 200,
+      data: {
+        modules: modules
+      }
+    });
+  } catch (error) {
+    res.json({
+      code: 500,
+      data: {
+        modules: []
+      },
+      message: error.message
+    });
+  }
+});
+
+app.get('/inner/version', (req, res) => {
+  res.json({
+    code: 200,
+    data: {
+      version: packageJson.version
+    }
+  });
+});
+
+app.get('/match', async (req, res) => {
+  const id = req.query.id;
+  const source = req.query.source;
+
+  if (!id) {
+    return res.json({
+      code: 400,
+      message: 'Missing id parameter',
+      data: null
+    });
+  }
+
+  try {
+    const result = await matchID(id, source);
+    res.json(result);
+  } catch (error) {
+    res.json({
+      code: 500,
+      message: error.message,
+      data: null
+    });
+  }
+});
+
+app.post('/match', async (req, res) => {
+  const id = req.body.id || req.query.id;
+  const source = req.body.source || req.query.source;
+
+  if (!id) {
+    return res.json({
+      code: 400,
+      message: 'Missing id parameter',
+      data: null
+    });
+  }
+
+  try {
+    const result = await matchID(id, source);
+    res.json(result);
+  } catch (error) {
+    res.json({
+      code: 500,
+      message: error.message,
+      data: null
+    });
+  }
+});
+
+// 根路径
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
+// 导出Express app 作为默认导出(Vercel需要)
+module.exports = app;
+
 // 导出matchID函数供直接调用
-module.exports = { matchID };
+module.exports.matchID = matchID;
 
 // 如果是直接运行此文件，则启动服务器
 if (require.main === module) {
@@ -40,108 +146,6 @@ unblockmusic-utils - 解锁网易云音乐内容的API服务
       PORT = portFromArgs;
     }
   }
-  
-  const app = express();
-
-  // 中间件
-  app.use(express.json());
-
-  // 静态文件服务
-  app.use(express.static('public'));
-
-  // 读取package.json获取版本号
-  const packageJson = require('./package.json');
-
-  // 内部API路由
-  app.get('/inner/modules', (req, res) => {
-    const fs = require('fs');
-    const path = require('path');
-
-    try {
-      const modulesPath = path.join(__dirname, 'modules');
-      const files = fs.readdirSync(modulesPath);
-      const modules = files
-        .filter(file => file.endsWith('.js'))
-        .map(file => file.replace('.js', ''));
-      
-      res.json({
-        code: 200,
-        data: {
-          modules: modules
-        }
-      });
-    } catch (error) {
-      res.json({
-        code: 500,
-        data: {
-          modules: []
-        },
-        message: error.message
-      });
-    }
-  });
-
-  app.get('/inner/version', (req, res) => {
-    res.json({
-      code: 200,
-      data: {
-        version: packageJson.version
-      }
-    });
-  });
-
-  app.get('/match', async (req, res) => {
-    const id = req.query.id;
-    const source = req.query.source;
-
-    if (!id) {
-      return res.json({
-        code: 400,
-        message: 'Missing id parameter',
-        data: null
-      });
-    }
-
-    try {
-      const result = await matchID(id, source);
-      res.json(result);
-    } catch (error) {
-      res.json({
-        code: 500,
-        message: error.message,
-        data: null
-      });
-    }
-  });
-
-  app.post('/match', async (req, res) => {
-    const id = req.body.id || req.query.id;
-    const source = req.body.source || req.query.source;
-
-    if (!id) {
-      return res.json({
-        code: 400,
-        message: 'Missing id parameter',
-        data: null
-      });
-    }
-
-    try {
-      const result = await matchID(id, source);
-      res.json(result);
-    } catch (error) {
-      res.json({
-        code: 500,
-        message: error.message,
-        data: null
-      });
-    }
-  });
-
-  // 根路径
-  app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-  });
 
   // 启动服务器
   const server = app.listen(PORT, () => {
