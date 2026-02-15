@@ -36,9 +36,36 @@ function loadModule(moduleName) {
 
   try {
     const module = require(modulePath);
-    // 缓存模块
-    moduleCache[moduleName] = module;
-    return module;
+    // 支持两种导出方式：
+    // 1. 直接导出函数: module.exports = function
+    // 2. 对象导出: module.exports = { funcName: function }
+    let moduleFunc = null;
+
+    if (typeof module === 'function') {
+      // 直接导出函数
+      moduleFunc = module;
+    } else if (typeof module === 'object' && module !== null) {
+      // 对象导出，尝试提取函数
+      // 优先查找与模块名同名的函数
+      if (typeof module[moduleName] === 'function') {
+        moduleFunc = module[moduleName];
+      } else {
+        // 如果没有同名函数，查找第一个函数
+        for (const key of Object.keys(module)) {
+          if (typeof module[key] === 'function') {
+            moduleFunc = module[key];
+            break;
+          }
+        }
+      }
+    }
+    // 缓存提取的函数
+    if (moduleFunc) {
+      moduleCache[moduleName] = moduleFunc;
+      return moduleFunc;
+    }
+    logger.error(`Module ${moduleName} does not export a valid function`);
+    return null;
   } catch (error) {
     logger.error(`Failed to load module ${moduleName}: ${error.message}`);
     return null;
