@@ -9,7 +9,7 @@ const logger = require('../src/logger');
 module.exports = {
     async baka(id) {
         try {
-            const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}`, {
+            const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}&br=999`, {
                 maxRedirects: 0,
                 validateStatus: (status) => status >= 200 && status < 400
             });
@@ -22,7 +22,7 @@ module.exports = {
             return null;
         } catch (error) {
             try {
-                const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}`);
+                const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}&br=999`);
                 if (typeof response.data === 'string' && response.data.startsWith('http')) {
                     return response.data;
                 }
