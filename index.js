@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { matchID } = require('./src/match');
 const logger = require('./src/logger');
+
+// 读取package.json获取版本号
+const packageJson = require('./package.json');
 
 // 创建Express应用
 const app = express();
@@ -13,14 +18,8 @@ app.use(express.json());
 // 静态文件服务
 app.use(express.static('public'));
 
-// 读取package.json获取版本号
-const packageJson = require('./package.json');
-
 // 内部API路由
 app.get('/inner/modules', (req, res) => {
-  const fs = require('fs');
-  const path = require('path');
-
   try {
     const modulesPath = path.join(__dirname, 'modules');
     const files = fs.readdirSync(modulesPath);
@@ -147,11 +146,49 @@ unblockmusic-utils - 解锁网易云音乐内容的API服务
     }
   }
 
+  // 显示启动加载动画
+  const spinnerChars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠷', '⠾', '⠧', '⠇', '⠏'];
+  let spinnerIndex = 0;
+  let spinnerInterval;
+
+  function startSpinner(text) {
+    process.stdout.write('\r' + spinnerChars[spinnerIndex] + ' ' + text);
+    spinnerIndex = (spinnerIndex + 1) % spinnerChars.length;
+  }
+
+  function stopSpinner(success = true, msg = '') {
+    if (spinnerInterval) {
+      clearInterval(spinnerInterval);
+      spinnerInterval = null;
+    }
+    if (success) {
+      console.log('\r✓ ' + msg);
+    }
+  }
+
+  // 启动加载动画
+  startSpinner('Loading modules...');
+  spinnerInterval = setInterval(() => startSpinner('Loading modules...'), 80);
+
+  // 预加载模块（让动画显示出来）
+  const modulesPath = path.join(__dirname, 'modules');
+  const moduleFiles = fs.readdirSync(modulesPath).filter(f => f.endsWith('.js'));
+  for (const file of moduleFiles) {
+    try {
+      require(path.join(modulesPath, file));
+    } catch (e) {
+      // 忽略错误
+    }
+  }
+
+  // 切换动画并启动服务器
+  startSpinner('Starting server...');
+
   // 启动服务器
   const server = app.listen(PORT, () => {
-    logger.info(`Server is running on port ${PORT}`);
-    logger.info(`Visit http://localhost:${PORT} to use the API`);
-    logger.info('Press Ctrl+C to stop the server');
+    stopSpinner(true, 'Server is running on port ' + PORT);
+    console.log('  Visit http://localhost:' + PORT + ' to use the API');
+    console.log('  Press Ctrl+C to stop the server');
   });
 
   // 处理端口冲突等错误
@@ -159,18 +196,19 @@ unblockmusic-utils - 解锁网易云音乐内容的API服务
     if (err.code === 'EADDRINUSE') {
       const newPort = PORT + 1;
       if (newPort > 3010) { // 避免无限尝试
-        logger.error(`All ports from ${PORT} to ${newPort-1} are busy`);
+        logger.error('All ports from ' + PORT + ' to ' + (newPort-1) + ' are busy');
         process.exit(1);
       }
-      logger.warn(`Port ${PORT} is busy, trying port ${newPort}...`);
+      console.log('\r⚠ Port ' + PORT + ' is busy, trying port ' + newPort + '...');
       setTimeout(() => {
         app.listen(newPort, () => {
-          logger.info(`Server is running on port ${newPort}`);
-          logger.info(`Visit http://localhost:${newPort} to use the API`);
+          stopSpinner(true, 'Server is running on port ' + newPort);
+          console.log('  Visit http://localhost:' + newPort + ' to use the API');
         });
       }, 1000);
     } else {
-      logger.error(`Server error: ${err.message}`);
+      stopSpinner(false, '');
+      logger.error('Server error: ' + err.message);
     }
   });
   
