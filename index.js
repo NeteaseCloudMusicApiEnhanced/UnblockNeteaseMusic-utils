@@ -6,6 +6,7 @@ const path = require('path');
 const { matchID } = require('./src/match');
 const logger = require('./src/logger');
 
+require('dotenv').config();
 // 读取package.json获取版本号
 const packageJson = require('./package.json');
 

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const logger = require('../src/logger');
+const br = process.env.DISABLE_FLAC === 'true' ? 320 : 999;
 
 /** * 通过baka音源获取音乐URL
  * @param {string} id - 网易云音乐歌曲ID
@@ -9,7 +10,7 @@ const logger = require('../src/logger');
 module.exports = {
     async baka(id) {
         try {
-            const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}&br=999`, {
+            const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}&br=${br}`, {
                 maxRedirects: 0,
                 validateStatus: (status) => status >= 200 && status < 400
             });
@@ -22,7 +23,7 @@ module.exports = {
             return null;
         } catch (error) {
             try {
-                const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}&br=999`);
+                const response = await axios.get(`https://api.baka.plus/meting/?type=url&id=${id}&br=${br}`);
                 if (typeof response.data === 'string' && response.data.startsWith('http')) {
                     return response.data;
                 }

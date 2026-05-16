@@ -1,5 +1,6 @@
 const axios = require('axios');
 const logger = require('../src/logger');
+const br = process.env.DISABLE_FLAC === 'true' ? 'exhigh' : 'lossless';
 
 /**
  * 通过byfuns音源获取音乐URL (支持无损音质)
@@ -10,7 +11,7 @@ const logger = require('../src/logger');
 module.exports = {
     async byfuns(id) {
         try {
-            const response = await axios.get(`https://api.byfuns.top/1/?id=${id}&level=lossless`, {
+            const response = await axios.get(`https://api.byfuns.top/1/?id=${id}&level=${br}`, {
                 maxRedirects: 0,
                 validateStatus: (status) => status >= 200 && status < 400
             });

@@ -1,6 +1,6 @@
 {
   "name": "@neteasecloudmusicapienhanced/unblockmusic-utils",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "⚙️A unlock music tool for NeteaseCloudMusicApiEnhanced.",
   "main": "index.js",
   "scripts": {
@@ -20,6 +20,7 @@
   "dependencies": {
     "@unblockneteasemusic/server": "^0.28.0",
     "axios": "^1.13.5",
+    "dotenv": "^17.4.2",
     "express": "^4.22.1",
     "https": "^1.0.0"
   },
