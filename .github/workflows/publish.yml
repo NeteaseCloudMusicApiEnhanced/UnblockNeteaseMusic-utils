@@ -1,0 +1,81 @@
+name: Publish to npm
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - package.json
+
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Check version change
+        id: version
+        shell: bash
+        run: |
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            OLD_VERSION=$(git show HEAD~1:package.json 2>/dev/null | node -p "try{JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')).version}catch(e){'0.0.0'}")
+            echo "old_version=$OLD_VERSION" >> $GITHUB_OUTPUT
+
+            if [ "$NEW_VERSION" != "$OLD_VERSION" ]; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "old_version=0.0.0" >> $GITHUB_OUTPUT
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if tag exists
+        id: tag
+        shell: bash
+        run: |
+          TAG="v${{ steps.version.outputs.new_version }}"
+          if git ls-remote --tags origin "refs/tags/$TAG" 2>/dev/null | grep -q .; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        if: steps.version.outputs.changed == 'true' && steps.tag.outputs.exists != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish to npm
+        if: steps.version.outputs.changed == 'true' && steps.tag.outputs.exists != 'true'
+        run: pnpm publish --access public --provenance
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.changed == 'true' && steps.tag.outputs.exists != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: v${{ steps.version.outputs.new_version }}
+          generate_release_notes: true
