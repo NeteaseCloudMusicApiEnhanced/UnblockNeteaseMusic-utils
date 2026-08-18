@@ -9,7 +9,7 @@ const logger = require('../src/logger');
 module.exports = {
     async qijieya(id) {
         try {
-            const response = await axios.get(`https://163api.qijieya.cn/meting/?type=url&id=${id}`, {
+            const response = await axios.get(`https://api.qijieya.cn/meting/?type=url&id=${id}`, {
                 maxRedirects: 0,
                 validateStatus: (status) => status >= 200 && status < 400
             });
@@ -22,7 +22,7 @@ module.exports = {
             return null;
         } catch (error) {
             try {
-                const response = await axios.get(`https://163api.qijieya.cn/meting/?type=url&id=${id}`);
+                const response = await axios.get(`https://api.qijieya.cn/meting/?type=url&id=${id}`);
                 if (typeof response.data === 'string' && response.data.startsWith('http')) {
                     return response.data;
                 }
