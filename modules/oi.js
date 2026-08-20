@@ -7,7 +7,7 @@ const logger = require('../src/logger');
  */
 
 module.exports = {
-    async gdmusic(id) {
+    async oi(id) {
         try {
             const response = await axios.get(`https://oiapi.net/api/Music_163?id=${id}`);
             if (response.data) {
