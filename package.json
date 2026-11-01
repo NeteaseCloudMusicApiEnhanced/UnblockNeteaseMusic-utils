@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "test:unit": "node --test test/match.test.js test/match-process-exit.test.js"
   },
   "repository": {
     "type": "git",
