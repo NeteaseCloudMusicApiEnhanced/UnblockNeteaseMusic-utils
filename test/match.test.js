@@ -5,7 +5,7 @@
 // Everything is stubbed through Module._load (axios, @unblockneteasemusic/server,
 // src/logger), so the tests never touch the network and do not need node_modules.
 
-const { test, beforeEach } = require('node:test')
+const { test, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const Module = require('node:module')
 
@@ -95,6 +95,16 @@ beforeEach(() => {
   process.env.UNBLOCK_MODULE_TIMEOUT_MS = String(TIMEOUT_MS)
   reset()
 })
+
+// matchID() deliberately unref()s its module timeout timers (see
+// match-process-exit.test.js), so while a test awaits a source that hangs this file
+// has no ref'd handle left. When the event loop drains like that, the test runner of
+// Node < 24 cancels every still-pending test ("Promise resolution is still pending
+// but the event loop has already resolved"), which cancelled 9 of the 13 tests below
+// on Node 18/20/22. Keep one ref'd timer for the whole file, released in after().
+// This only holds the loop open; each test is still bounded by its own `timeout`.
+const loopKeepAlive = setInterval(() => {}, 1000)
+after(() => clearInterval(loopKeepAlive))
 
 // ---------------------------------------------------------------------------
 // timeout configuration
