@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 
+// Load .env BEFORE requiring anything that may read process.env at module load
+// time (e.g. UNBLOCK_MODULE_TIMEOUT_MS in src/match.js, DISABLE_FLAC in the
+// modules). The timeout is also read lazily on every call, but doing this first
+// keeps CLI/`.env` behavior identical to the documented configuration.
+require('dotenv').config();
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { matchID } = require('./src/match');
 const logger = require('./src/logger');
 
-require('dotenv').config();
 // 读取package.json获取版本号
 const packageJson = require('./package.json');
 
